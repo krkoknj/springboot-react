@@ -14,6 +14,7 @@ public class UserService {
     }
 
     public User save(User user) {
+        // 저장하기 전에 같은 이름이 있는지 유효성 검사.
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         return userRepository.save(user);
     }

@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -180,7 +181,51 @@ public class UserControllerTest {
         assertThat(response.getBody().getValidationErrors().size()).isEqualTo(3);
     }
 
-    
+    @Test
+    public void 사용자_이름이_Null일때_에러메세지받기() {
+        User validUser = createValidUser();
+        validUser.setUsername(null);
+        ResponseEntity<ApiError> response = postSignup(validUser, ApiError.class);
+        Map<String, String> validationErrors = response.getBody().getValidationErrors();
+        assertThat(validationErrors.get("username")).isEqualTo("Username cannot be null");
+    }
+
+    @Test
+    public void 사용자_비밀번호가_Null일때_에러메세지받기() {
+        User validUser = createValidUser();
+        validUser.setPassword(null);
+        ResponseEntity<ApiError> response = postSignup(validUser, ApiError.class);
+        Map<String, String> validationErrors = response.getBody().getValidationErrors();
+        assertThat(validationErrors.get("password")).isEqualTo("Cannot be null");
+    }
+
+    @Test
+    public void 사용자_이름의_길이가_짧을때_에러메세지받기() {
+        User validUser = createValidUser();
+        validUser.setUsername("abc");
+        ResponseEntity<ApiError> response = postSignup(validUser, ApiError.class);
+        Map<String, String> validationErrors = response.getBody().getValidationErrors();
+        assertThat(validationErrors.get("username")).isEqualTo("It must have minimum 4 and maximum 255 characters");
+    }
+
+    @Test
+    public void 사용자_비밀번호가_대문자와_소문자_숫자_없을때_에러메세지받기() {
+        User validUser = createValidUser();
+        validUser.setPassword("alllowercase");
+        ResponseEntity<ApiError> response = postSignup(validUser, ApiError.class);
+        Map<String, String> validationErrors = response.getBody().getValidationErrors();
+        assertThat(validationErrors.get("password")).isEqualTo("Password must have at least one uppercase, one lowercase letter and one number");
+    }
+
+    @Test
+    public void 같은이름_사용자_유효성검사() {
+        userRepository.save(createValidUser());
+
+        User user = createValidUser();
+
+        ResponseEntity<Object> response = postSignup(user, Object.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
 
     public <T> ResponseEntity<T> postSignup(Object request, Class<T> response) {
         return testRestTemplate.postForEntity(API_1_0_USERS, request, response);
